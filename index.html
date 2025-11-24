@@ -7,7 +7,9 @@
     <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet"/>
     <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
+    <!-- HEADER -->
     <header class="text-gray-900 bg-white-900 body-font">
       <div class="container mx-auto flex flex-wrap p-5 flex-col md:flex-row items-center">
         <a class="flex title-font font-medium items-center text-gray-900 mb-4 md:mb-0">
@@ -16,61 +18,87 @@
         </a>
       </div>
     </header>
-    
+
+
+    <!-- HERO SECTION + SEARCH -->
     <section class="text-gray-400 bg-gray-900 body-font">
       <div class="container mx-auto flex px-5 py-24 md:flex-row flex-col items-center">
-        <div class="lg:flex-grow md:w-1/2 lg:pr-24 md:pr-16 flex flex-col md:items-start md:text-left mb-16 md:mb-0 items-center text-center">
-          <!-- Search Section -->
+
+        <!-- LEFT SIDE: SEARCH AREA -->
+        <div class="lg:flex-grow md:w-1/2 lg:pr-24 md:pr-16 
+                    flex flex-col md:items-start md:text-left 
+                    mb-16 md:mb-0 items-center text-center">
+
+          <!-- SEARCH SECTION -->
           <section class="text-gray-400 bg-gray-900 body-font">
             <div class="container px-5 py-10 mx-auto">
               <div class="flex flex-col text-left w-full mb-12 items-start">
+
                 <h1 class="sm:text-3xl text-2xl font-medium title-font mb-4 text-white">
                   World Clock Search
                 </h1>
-                <p class="lg:w-2/3 mx-auto leading-relaxed text-base">
+
+                <p class="lg:w-2/3 leading-relaxed text-base ml-1">
                   Search for a city to add a clock.
                 </p>
+
                 <div class="flex mt-6 justify-center">
                   <div class="relative mr-4" style="width: 600px;">
                     <input
                       type="text"
                       id="search-input"
                       placeholder="Search City..."
-                      class="w-full bg-gray-800 rounded border border-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-900 text-base outline-none text-gray-100 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
+                      class="w-full bg-gray-800 rounded border border-gray-700 focus:border-indigo-500 
+                             focus:ring-2 focus:ring-indigo-900 text-base outline-none text-gray-100 
+                             py-1 px-3 leading-8 transition-colors duration-200 ease-in-out"
                     />
-                  <div id="search-results" class="absolute z-10 bg-gray-800 w-full mt-1 rounded hidden shadow-lg border border-gray-700 max-h-60 overflow-y-auto"></div>
+                    <div id="search-results"
+                      class="absolute z-10 bg-gray-800 w-full mt-1 rounded hidden shadow-lg 
+                             border border-gray-700 max-h-60 overflow-y-auto">
+                    </div>
+                  </div>
                 </div>
+
               </div>
             </div>
+          </section>
 
-            <!-- Clocks Grid -->
-            <div id="clocks-container" class="flex flex-nowrap overflow-x-auto -m-4 pb-8">
-              <!-- Cards will be injected here -->
-            </div>
-          </div>
-        </section>
         </div>
-      
+
+        <!-- RIGHT SIDE: HERO IMAGE -->
         <div class="lg:max-w-lg lg:w-full md:w-1/2 w-5/6">
-          <img class="object-cover object-center rounded" alt="hero" src="hero.png"6/>
+          <img class="object-cover object-center rounded" alt="hero" src="hero.png"/>
+        </div>
+
+      </div>
+    </section>
+
+
+
+    <!-- CLOCKS SECTION (SEPARATED SO POSITION IS FIXED) -->
+    <section class="text-gray-400 bg-gray-900 body-font">
+      <div class="container px-5 pb-16 mx-auto">
+        <div id="clocks-container" class="flex flex-nowrap overflow-x-auto -m-4 pb-8">
+          <!-- Clock Cards will be injected here by app.js -->
         </div>
       </div>
     </section>
-    
 
+
+
+    <!-- FOOTER -->
     <footer class="text-gray-400 bg-gray-900 body-font">
       <div class="container px-5 py-8 mx-auto flex items-center sm:flex-row flex-col">
         <a class="flex title-font font-medium items-center md:justify-start justify-center text-white">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-          </svg>
           <span class="ml-3 text-xl">WorldSync</span>
         </a>
         <p class="text-sm text-gray-400 sm:ml-4 sm:pl-4 sm:border-l-2 sm:border-gray-800 sm:py-2 sm:mt-0 mt-4">
           © 2025 WorldSync
         </p>
-       
       </div>
     </footer>
-</body>
 
+    <script src="app.js"></script>
+</body>
 </html>

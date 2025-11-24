@@ -1,0 +1,51 @@
+.card-hover {
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+/* Custom scrollbar for search results */
+#search-results::-webkit-scrollbar {
+  width: 8px;
+}
+
+#search-results::-webkit-scrollbar-track {
+  background: #2d3748;
+}
+
+#search-results::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 4px;
+}
+
+#search-results::-webkit-scrollbar-thumb:hover {
+  background: #718096;
+}
+
+/* Horizontal scrolling for clocks container */
+#clocks-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+#clocks-container::-webkit-scrollbar-track {
+  background: #2d3748;
+  border-radius: 4px;
+}
+
+#clocks-container::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 4px;
+}
+
+#clocks-container::-webkit-scrollbar-thumb:hover {
+  background: #718096;
+}
+
+.clock-card {
+  min-width: 350px;
+  flex-shrink: 0;
+}

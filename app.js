@@ -5,15 +5,14 @@ let allTimezones = [];
 const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 
-// Initialize
+
 async function init() {
   await fetchAllTimezones();
 
-  // Enable live search
+  
   searchInput.addEventListener('input', handleSearch);
 }
 
-// Fetch all timezones
 async function fetchAllTimezones() {
   try {
     const response = await fetch(`${BASE_URL}/timezone`);
@@ -35,7 +34,7 @@ async function fetchAllTimezones() {
   }
 }
 
-// Handle search input
+
 function handleSearch(e) {
   const query = e.target.value.toLowerCase();
   searchResults.innerHTML = '';
@@ -58,7 +57,6 @@ function handleSearch(e) {
       div.className = 'p-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-700 last:border-0';
       div.textContent = `${city.name}, ${city.country}`;
 
-      // NO clock-adding action — just hides after click
       div.onclick = () => {
         searchInput.value = `${city.name}, ${city.country}`;
         searchResults.classList.add('hidden');
@@ -71,5 +69,5 @@ function handleSearch(e) {
   }
 }
 
-// Start app
+
 init();

@@ -7,10 +7,7 @@ const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 const clocksContainer = document.getElementById('clocks-container');
 
-searchInput.addEventListener('input', handleSearch);
-
-
-// Initialize
+//initialize
 async function init() {
   await fetchAllTimezones();
   
@@ -22,9 +19,12 @@ async function init() {
   }
   setInterval(updateTimes, 1000);
   updateTimes();
+
+  
+  searchInput.addEventListener('input', handleSearch);
 }
 
-// Fetch all timezones
+//fetching data from API
 async function fetchAllTimezones() {
   try {
     const response = await fetch(`${BASE_URL}/timezone`);
@@ -47,7 +47,7 @@ async function fetchAllTimezones() {
   }
 }
 
-// Handle search input
+// Search Bar
 function handleSearch(e) {
   const query = e.target.value.toLowerCase();
   searchResults.innerHTML = '';
@@ -69,6 +69,7 @@ function handleSearch(e) {
       const div = document.createElement('div');
       div.className = 'p-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-700 last:border-0';
       div.textContent = `${city.name}, ${city.country}`;
+
       div.onclick = () => {
         addClock(city);
         searchInput.value = '';
@@ -189,4 +190,5 @@ function updateTimes() {
 }
 
 // Start app
+
 init();

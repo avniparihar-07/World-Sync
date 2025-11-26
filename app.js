@@ -7,7 +7,7 @@ const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 const clocksContainer = document.getElementById('clocks-container');
 
-//initialize
+
 async function init() {
   await fetchAllTimezones();
   
@@ -24,7 +24,7 @@ async function init() {
   searchInput.addEventListener('input', handleSearch);
 }
 
-//fetching data from API
+
 async function fetchAllTimezones() {
   try {
     const response = await fetch(`${BASE_URL}/timezone`);
@@ -47,7 +47,7 @@ async function fetchAllTimezones() {
   }
 }
 
-// Search Bar
+
 function handleSearch(e) {
   const query = e.target.value.toLowerCase();
   searchResults.innerHTML = '';
@@ -64,7 +64,7 @@ function handleSearch(e) {
 
   if (matches.length > 0) {
     searchResults.classList.remove('hidden');
-    // Limit results to 10 for performance
+    
     matches.slice(0, 10).forEach(city => {
       const div = document.createElement('div');
       div.className = 'p-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-700 last:border-0';
@@ -82,7 +82,7 @@ function handleSearch(e) {
   }
 }
 
-//adding clock
+
 async function addClock(city) {
   if (activeClocks.find(c => c.timezone === city.timezone)) return; // Prevent duplicates
 
@@ -121,19 +121,19 @@ async function addClock(city) {
     renderClocks();
   } catch (error) {
     console.error("Error fetching city details:", error);
-    // Fallback if API fails for specific city
+  
     activeClocks.push(city);
     renderClocks();
   }
 }
 
-//remove clock
+
 function removeClock(cityName) {
   activeClocks = activeClocks.filter(c => c.name !== cityName);
   renderClocks();
 }
 
-//clock card layout
+
 function renderClocks() {
   clocksContainer.innerHTML = '';
   activeClocks.forEach(city => {
@@ -157,7 +157,6 @@ function renderClocks() {
   updateTimes();
 }
 
-//update time
 function updateTimes() {
   const timeDisplays = document.querySelectorAll('.time-display');
   const dateDisplays = document.querySelectorAll('.date-display');
@@ -189,6 +188,6 @@ function updateTimes() {
   });
 }
 
-// Start app
+
 
 init();

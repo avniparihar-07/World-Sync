@@ -80,7 +80,53 @@
         </div>
       </div>
     </section>
+ 
+    <!-- Comparison Modal -->
+    <div 
+      id="comparison-modal" 
+      class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden z-50 flex items-center justify-center"
+    >
+      <!-- Modal Box -->
+      <div 
+        id="comparison-box" 
+        class="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full relative"
+      >
+        <!-- Close Button -->
+        <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
 
+        <h2 class="text-2xl text-white mb-4">Compare Time</h2>
+
+        <p class="text-gray-400 mb-4">
+          Compare 
+          <span id="source-city" class="text-indigo-400 font-bold"></span> with:
+        </p>
+
+        <div class="relative mb-6">
+          <select
+            id="compare-select"
+            class="w-full bg-gray-700 text-white rounded border-gray-600 py-2 px-3 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="">Select a city...</option>
+          </select>
+        </div>
+
+        <div id="comparison-result" class="hidden bg-gray-700 p-4 rounded text-center">
+          <p class="text-xl text-white mb-2">
+            <span id="target-city" class="font-bold"></span> is 
+          </p>
+
+          <p id="time-diff" class="text-3xl font-bold text-indigo-400 mb-2"></p>
+
+          <p id="ahead-behind" class="text-gray-300"></p>
+
+          <p id="target-time-display" class="text-sm text-gray-500 mt-2"></p>
+        </div>
+      </div>
+    </div>
 
 
     <footer class="text-gray-400 bg-gray-900 body-font">

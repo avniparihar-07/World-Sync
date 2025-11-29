@@ -191,3 +191,19 @@ function updateTimes() {
 
 
 init();
+function updateTimes() {
+  const timeDisplays = document.querySelectorAll('.time-display');
+  const dateDisplays = document.querySelectorAll('.date-display');
+
+  timeDisplays.forEach(display => {
+    const timezone = display.getAttribute('data-timezone');
+    const now = new Date();
+    const timeString = new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: timezone,
+      hour12: true
+    }).format(now);
+    display.textContent = timeString;
+  }) ;}

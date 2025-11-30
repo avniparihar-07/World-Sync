@@ -1,4 +1,6 @@
 const BASE_URL = 'https://worldtimeapi.org/api';
+const WEATHER_API_KEY = "YOUR_OPENWEATHER_API_KEY";
+
 
 let allTimezones = [];
 let activeClocks = [];
@@ -81,6 +83,25 @@ function handleSearch(e) {
     searchResults.classList.add('hidden');
   }
 }
+async function fetchWeather(cityName) {
+  try {
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&appid=${WEATHER_API_KEY}&units=metric`
+    );
+    const data = await response.json();
+    if (data.cod !== 200) return null;
+
+    return {
+      temp: data.main.temp,
+      condition: data.weather[0].description,
+      icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`
+    };
+  } catch (err) {
+    console.error("Weather fetch failed for:", cityName, err);
+    return null;
+  }
+}
+
 
 
 async function addClock(city) {
@@ -91,6 +112,8 @@ async function addClock(city) {
       fetch(`${BASE_URL}/timezone/${city.timezone}`),
       fetchCityImage(city.name, city.country)
     ]);
+
+    let weather = await fetchWeather(city.name);
 
     let utc_offset = city.utc_offset;
     let abbreviation = city.abbreviation;
@@ -114,7 +137,8 @@ async function addClock(city) {
       ...city,
       utc_offset,
       abbreviation,
-      image
+      image,
+      weather
     };
 
     activeClocks.push(cityWithDetails);
@@ -149,7 +173,11 @@ function renderClocks() {
         <h1 class="title-font sm:text-2xl text-xl font-medium text-white mb-3">${city.name}</h1>
         <p class="leading-relaxed mb-3 text-4xl font-bold text-indigo-400 time-display" data-timezone="${city.timezone}">--:--:--</p>
         <p class="text-gray-500 text-sm mb-4 date-display" data-timezone="${city.timezone}">--</p>
-        
+        <p class="text-gray-300 text-sm weather-display" data-city="${city.name}">
+           ${city.weather ? `${city.weather.temp}°C • ${city.weather.condition}` : "Loading weather..."}
+        </p>
+         <img class="mx-auto mb-2 w-12 weather-icon" src="${city.weather ? city.weather.icon : ''}" data-city="${city.name}">
+
       </div>
     `;
     clocksContainer.appendChild(card);
@@ -207,3 +235,17 @@ function updateTimes() {
     }).format(now);
     display.textContent = timeString;
   }) ;}
+async function updateWeather() {
+  const weatherDisplays = document.querySelectorAll('.weather-display');
+
+  for (let w of weatherDisplays) {
+    const cityName = w.getAttribute('data-city');
+    const weather = await fetchWeather(cityName);
+
+    if (weather) {
+      w.textContent = `${weather.temp}°C • ${weather.condition}`;
+      const iconImg = document.querySelector(`img.weather-icon[data-city="${cityName}"]`);
+      if (iconImg) iconImg.src = weather.icon;
+    }
+  }
+}

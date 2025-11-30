@@ -1,15 +1,18 @@
 const BASE_URL = 'https://worldtimeapi.org/api';
-const WEATHER_API_KEY = "YOUR_OPENWEATHER_API_KEY";
-
 
 let allTimezones = [];
 let activeClocks = [];
+let currentComparisonSource = null;
 
 const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 const clocksContainer = document.getElementById('clocks-container');
+const comparisonModal = document.getElementById('comparison-modal');
+const closeModalBtn = document.getElementById('close-modal');
+const compareSelect = document.getElementById('compare-select');
+const comparisonResult = document.getElementById('comparison-result');
 
-
+// Initialize
 async function init() {
   await fetchAllTimezones();
   
@@ -19,13 +22,17 @@ async function init() {
     if (ny) await addClock(ny);
     if (london) await addClock(london);
   }
+
+  searchInput.addEventListener('input', handleSearch);
+  closeModalBtn.addEventListener('click', closeComparison);
+  comparisonModal.addEventListener('click', (e) => {
+    if (e.target === comparisonModal) closeComparison();
+  });
+  compareSelect.addEventListener('change', handleComparisonSelect);
+
   setInterval(updateTimes, 1000);
   updateTimes();
-
-  
-  searchInput.addEventListener('input', handleSearch);
 }
-
 
 async function fetchAllTimezones() {
   try {
@@ -49,7 +56,6 @@ async function fetchAllTimezones() {
   }
 }
 
-
 function handleSearch(e) {
   const query = e.target.value.toLowerCase();
   searchResults.innerHTML = '';
@@ -66,12 +72,11 @@ function handleSearch(e) {
 
   if (matches.length > 0) {
     searchResults.classList.remove('hidden');
-    
+    // Limit results to 10 for performance
     matches.slice(0, 10).forEach(city => {
       const div = document.createElement('div');
       div.className = 'p-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-700 last:border-0';
       div.textContent = `${city.name}, ${city.country}`;
-
       div.onclick = () => {
         addClock(city);
         searchInput.value = '';
@@ -83,25 +88,6 @@ function handleSearch(e) {
     searchResults.classList.add('hidden');
   }
 }
-async function fetchWeather(cityName) {
-  try {
-    const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&appid=${WEATHER_API_KEY}&units=metric`
-    );
-    const data = await response.json();
-    if (data.cod !== 200) return null;
-
-    return {
-      temp: data.main.temp,
-      condition: data.weather[0].description,
-      icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`
-    };
-  } catch (err) {
-    console.error("Weather fetch failed for:", cityName, err);
-    return null;
-  }
-}
-
 
 
 async function addClock(city) {
@@ -145,18 +131,52 @@ async function addClock(city) {
     renderClocks();
   } catch (error) {
     console.error("Error fetching city details:", error);
-  
+    // Fallback if API fails for specific city
     activeClocks.push(city);
     renderClocks();
   }
 }
 
+async function fetchCityImage(cityName, region) {
+  const themes = ['city', 'landscape', 'architecture', 'skyline', 'nature'];
+  const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+  const queries = [`${cityName} ${randomTheme}`, `${region} ${randomTheme}`, randomTheme];
+
+  if (PEXELS_API_KEY && PEXELS_API_KEY.length > 0) {
+    try {
+      for (let q of queries) {
+        const page = Math.floor(Math.random() * 50) + 1;
+        const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=1&orientation=landscape&page=${page}`;
+        const res = await fetch(url, { headers: { Authorization: PEXELS_API_KEY } });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.photos && data.photos.length > 0) {
+            return data.photos[0].src.medium;
+          }
+        }
+      }
+
+      const curatedPage = Math.floor(Math.random() * 50) + 1;
+      const curatedRes = await fetch(`https://api.pexels.com/v1/curated?per_page=1&page=${curatedPage}`, { headers: { Authorization: PEXELS_API_KEY } });
+      if (curatedRes.ok) {
+        const curatedData = await curatedRes.json();
+        if (curatedData.photos && curatedData.photos.length > 0) {
+          return curatedData.photos[0].src.medium;
+        }
+      }
+    } catch (err) {
+      console.error('Pexels API error:', err);
+    }
+  }
+
+  const unsplashQuery = `${cityName} ${randomTheme}`.trim();
+  return `https://source.unsplash.com/720x400/?${encodeURIComponent(unsplashQuery)}`;
+}
 
 function removeClock(cityName) {
   activeClocks = activeClocks.filter(c => c.name !== cityName);
   renderClocks();
 }
-
 
 function renderClocks() {
   clocksContainer.innerHTML = '';
@@ -173,11 +193,7 @@ function renderClocks() {
         <h1 class="title-font sm:text-2xl text-xl font-medium text-white mb-3">${city.name}</h1>
         <p class="leading-relaxed mb-3 text-4xl font-bold text-indigo-400 time-display" data-timezone="${city.timezone}">--:--:--</p>
         <p class="text-gray-500 text-sm mb-4 date-display" data-timezone="${city.timezone}">--</p>
-        <p class="text-gray-300 text-sm weather-display" data-city="${city.name}">
-           ${city.weather ? `${city.weather.temp}°C • ${city.weather.condition}` : "Loading weather..."}
-        </p>
-         <img class="mx-auto mb-2 w-12 weather-icon" src="${city.weather ? city.weather.icon : ''}" data-city="${city.name}">
-
+        
       </div>
     `;
     clocksContainer.appendChild(card);
@@ -216,8 +232,70 @@ function updateTimes() {
   });
 }
 
+function openComparison(cityName) {
+  currentComparisonSource = activeClocks.find(c => c.name === cityName);
+  if (!currentComparisonSource) return;
 
+  document.getElementById('source-city').textContent = currentComparisonSource.name;
+  compareSelect.innerHTML = '<option value="">Select a city...</option>';
+  activeClocks.forEach(city => {
+    if (city.name !== currentComparisonSource.name) {
+      const option = document.createElement('option');
+      option.value = city.name;
+      option.textContent = `${city.name}, ${city.country}`;
+      compareSelect.appendChild(option);
+    }
+  });
 
+  comparisonResult.classList.add('hidden');
+  comparisonModal.classList.remove('hidden');
+}
+
+function closeComparison() {
+  comparisonModal.classList.add('hidden');
+  currentComparisonSource = null;
+}
+
+function handleComparisonSelect(e) {
+  const targetCityName = e.target.value;
+  if (!targetCityName || !currentComparisonSource) {
+    comparisonResult.classList.add('hidden');
+    return;
+  }
+
+  const targetCity = activeClocks.find(c => c.name === targetCityName);
+  
+  const now = new Date();
+  const sourceDateStr = new Date().toLocaleString("en-US", { timeZone: currentComparisonSource.timezone });
+  const targetDateStr = new Date().toLocaleString("en-US", { timeZone: targetCity.timezone });
+  
+  const sourceDate = new Date(sourceDateStr);
+  const targetDate = new Date(targetDateStr);
+  
+  const diffMs = targetDate - sourceDate;
+  const diffHours = Math.floor(Math.abs(diffMs) / 3600000);
+  const diffMinutes = Math.floor((Math.abs(diffMs) % 3600000) / 60000);
+  
+  const isAhead = diffMs >= 0;
+  
+  document.getElementById('target-city').textContent = targetCity.name;
+  document.getElementById('time-diff').textContent = `${diffHours}h ${diffMinutes > 0 ? diffMinutes + 'm' : ''}`;
+  document.getElementById('ahead-behind').textContent = isAhead ? 'ahead' : 'behind';
+  
+  // Show target time
+  const targetTimeStr = new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: targetCity.timezone,
+    hour12: true
+  }).format(now);
+  
+  document.getElementById('target-time-display').textContent = `Current time in ${targetCity.name}: ${targetTimeStr}`;
+
+  comparisonResult.classList.remove('hidden');
+}
+
+// Start the app
 init();
 function updateTimes() {
   const timeDisplays = document.querySelectorAll('.time-display');

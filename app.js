@@ -1,5 +1,5 @@
 const BASE_URL = 'https://worldtimeapi.org/api';
-
+const PEXELS_API_KEY = '6wlCOiyibO5F5WTrXcEA4AOkf7waCJD9dao3z7MQroDAosMFqrg3tmKf';
 let allTimezones = [];
 let activeClocks = [];
 let currentComparisonSource = null;
@@ -89,7 +89,6 @@ function handleSearch(e) {
   }
 }
 
-
 async function addClock(city) {
   if (activeClocks.find(c => c.timezone === city.timezone)) return; // Prevent duplicates
 
@@ -98,8 +97,6 @@ async function addClock(city) {
       fetch(`${BASE_URL}/timezone/${city.timezone}`),
       fetchCityImage(city.name, city.country)
     ]);
-
-    let weather = await fetchWeather(city.name);
 
     let utc_offset = city.utc_offset;
     let abbreviation = city.abbreviation;
@@ -123,8 +120,7 @@ async function addClock(city) {
       ...city,
       utc_offset,
       abbreviation,
-      image,
-      weather
+      image
     };
 
     activeClocks.push(cityWithDetails);
@@ -193,7 +189,9 @@ function renderClocks() {
         <h1 class="title-font sm:text-2xl text-xl font-medium text-white mb-3">${city.name}</h1>
         <p class="leading-relaxed mb-3 text-4xl font-bold text-indigo-400 time-display" data-timezone="${city.timezone}">--:--:--</p>
         <p class="text-gray-500 text-sm mb-4 date-display" data-timezone="${city.timezone}">--</p>
-        
+        <div class="text-center mt-4">
+          <button onclick="openComparison('${city.name}')" class="inline-flex text-white bg-indigo-500 border-0 py-1 px-4 focus:outline-none hover:bg-indigo-600 rounded text-sm">Compare</button>
+        </div>
       </div>
     `;
     clocksContainer.appendChild(card);
@@ -297,33 +295,3 @@ function handleComparisonSelect(e) {
 
 // Start the app
 init();
-function updateTimes() {
-  const timeDisplays = document.querySelectorAll('.time-display');
-  const dateDisplays = document.querySelectorAll('.date-display');
-
-  timeDisplays.forEach(display => {
-    const timezone = display.getAttribute('data-timezone');
-    const now = new Date();
-    const timeString = new Intl.DateTimeFormat('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      timeZone: timezone,
-      hour12: true
-    }).format(now);
-    display.textContent = timeString;
-  }) ;}
-async function updateWeather() {
-  const weatherDisplays = document.querySelectorAll('.weather-display');
-
-  for (let w of weatherDisplays) {
-    const cityName = w.getAttribute('data-city');
-    const weather = await fetchWeather(cityName);
-
-    if (weather) {
-      w.textContent = `${weather.temp}°C • ${weather.condition}`;
-      const iconImg = document.querySelector(`img.weather-icon[data-city="${cityName}"]`);
-      if (iconImg) iconImg.src = weather.icon;
-    }
-  }
-}

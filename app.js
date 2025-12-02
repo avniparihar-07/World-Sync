@@ -232,21 +232,27 @@ function renderClocks() {
     card.className = 'p-4 clock-card';
     card.innerHTML = `
       <div class="h-full bg-gray-800 bg-opacity-40 p-8 rounded-lg overflow-hidden text-center relative card-hover border border-gray-700">
-        <button onclick="removeClock('${city.name}')" class="absolute top-2 right-2 text-gray-500 hover:text-red-500">
+        <button onclick="removeClock('${city.timezone}')" class="absolute top-2 right-2 text-gray-500 hover:text-red-500">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
-        <img class="lg:h-48 md:h-36 w-full object-cover object-center mb-6 rounded" src="${city.image}" alt="${city.name}">
-        
-        <h2 class="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">${city.country.toUpperCase()} (${city.utc_offset})</h2>
+        <img class="lg:h-48 md:h-36 w-full object-cover object-center mb-6 rounded" 
+          src="${city.image}" 
+          alt="${city.name}" 
+          onerror="this.src='https://dummyimage.com/720x400/4a5568/fff&text=${encodeURIComponent(city.name)}'">
+        <h2 class="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">
+           ${city.country.toUpperCase()} (${city.utc_offset})
+        </h2>
         <h1 class="title-font sm:text-2xl text-xl font-medium text-white mb-3">${city.name}</h1>
-        
-        <p class="leading-relaxed mb-3 text-4xl font-bold text-indigo-400 time-display" data-timezone="${city.timezone}">--:--:--</p>
-        <p class="text-gray-500 text-sm mb-4 date-display" data-timezone="${city.timezone}">--</p>
-
+        <p class="leading-relaxed mb-3 text-4xl font-bold text-indigo-400 time-display" 
+          data-timezone="${city.timezone}">--:--:--</p>
+        <p class="text-gray-500 text-sm mb-4 date-display" 
+          data-timezone="${city.timezone}">--</p>
         ${weather}
-
         <div class="text-center mt-4">
-          <button onclick="openComparison('${city.name}')" class="inline-flex text-white bg-indigo-500 border-0 py-1 px-4 focus:outline-none hover:bg-indigo-600 rounded text-sm">Compare</button>
+          <button onclick="openComparison('${city.timezone}')" 
+            class="inline-flex text-white bg-indigo-500 border-0 py-1 px-4 focus:outline-none hover:bg-indigo-600 rounded text-sm">
+            Compare
+          </button>
         </div>
       </div>
     `;
@@ -265,8 +271,8 @@ async function updateWeatherForAll() {
   renderClocks();
 }
 
-function removeClock(cityName) {
-  activeClocks = activeClocks.filter(c => c.name !== cityName);
+function removeClock(timezone) {
+  activeClocks = activeClocks.filter(c => c.timezone !== timezone);
   renderClocks();
 }
 
@@ -299,16 +305,17 @@ function updateTimes() {
   });
 }
 
-function openComparison(cityName) {
-  currentComparisonSource = activeClocks.find(c => c.name === cityName);
+function openComparison(timezone) {
+  currentComparisonSource = activeClocks.find(c => c.timezone === timezone);
   if (!currentComparisonSource) return;
 
   document.getElementById('source-city').textContent = currentComparisonSource.name;
   compareSelect.innerHTML = '<option value="">Select a city...</option>';
+
   activeClocks.forEach(city => {
-    if (city.name !== currentComparisonSource.name) {
+    if (city.timezone !== currentComparisonSource.timezone) {
       const option = document.createElement('option');
-      option.value = city.name;
+      option.value = city.timezone;
       option.textContent = `${city.name}, ${city.country}`;
       compareSelect.appendChild(option);
     }
@@ -324,13 +331,13 @@ function closeComparison() {
 }
 
 function handleComparisonSelect(e) {
-  const targetCityName = e.target.value;
-  if (!targetCityName || !currentComparisonSource) {
+  const targetTimezone = e.target.value;
+  if (!targetTimezone || !currentComparisonSource) {
     comparisonResult.classList.add('hidden');
     return;
   }
 
-  const targetCity = activeClocks.find(c => c.name === targetCityName);
+  const targetCity = activeClocks.find(c => c.timezone === targetTimezone);
 
   const now = new Date();
   const sourceDateStr = now.toLocaleString("en-US", { timeZone: currentComparisonSource.timezone });
@@ -346,7 +353,7 @@ function handleComparisonSelect(e) {
   const isAhead = diffMs >= 0;
 
   document.getElementById('target-city').textContent = targetCity.name;
-  document.getElementById('time-diff').textContent = `${diffHours}h ${diffMinutes > 0 ? diffMinutes + 'm' : ''}`;
+  document.getElementById('time-diff').textContent = `${diffHours}h ${diffMinutes ? diffMinutes + 'm' : ''}`;
   document.getElementById('ahead-behind').textContent = isAhead ? 'ahead' : 'behind';
 
   const targetTimeStr = new Intl.DateTimeFormat('en-US', {
@@ -356,7 +363,8 @@ function handleComparisonSelect(e) {
     hour12: true
   }).format(now);
 
-  document.getElementById('target-time-display').textContent = `Current time in ${targetCity.name}: ${targetTimeStr}`;
+  document.getElementById('target-time-display').textContent =
+    `Current time in ${targetCity.name}: ${targetTimeStr}`;
 
   comparisonResult.classList.remove('hidden');
 }

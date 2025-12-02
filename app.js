@@ -1,5 +1,7 @@
 const BASE_URL = 'https://worldtimeapi.org/api';
 const PEXELS_API_KEY = '6wlCOiyibO5F5WTrXcEA4AOkf7waCJD9dao3z7MQroDAosMFqrg3tmKf';
+const API_WEATHER = "https://api.open-meteo.com/v1/forecast";
+
 let allTimezones = [];
 let activeClocks = [];
 let currentComparisonSource = null;
@@ -15,7 +17,7 @@ const comparisonResult = document.getElementById('comparison-result');
 // Initialize
 async function init() {
   await fetchAllTimezones();
-  
+
   if (allTimezones.length > 0) {
     const ny = allTimezones.find(c => c.timezone === "America/New_York");
     const london = allTimezones.find(c => c.timezone === "Europe/London");
@@ -32,13 +34,16 @@ async function init() {
 
   setInterval(updateTimes, 1000);
   updateTimes();
+
+  // Weather update every 10 minutes
+  setInterval(updateWeatherForAll, 600000);
 }
 
 async function fetchAllTimezones() {
   try {
     const response = await fetch(`${BASE_URL}/timezone`);
     const data = await response.json();
-    
+
     allTimezones = data.map(tz => {
       const parts = tz.split('/');
       const region = parts[0];
@@ -59,20 +64,19 @@ async function fetchAllTimezones() {
 function handleSearch(e) {
   const query = e.target.value.toLowerCase();
   searchResults.innerHTML = '';
-  
+
   if (query.length < 1) {
     searchResults.classList.add('hidden');
     return;
   }
 
-  const matches = allTimezones.filter(city => 
-    city.name.toLowerCase().includes(query) || 
+  const matches = allTimezones.filter(city =>
+    city.name.toLowerCase().includes(query) ||
     city.country.toLowerCase().includes(query)
   );
 
   if (matches.length > 0) {
     searchResults.classList.remove('hidden');
-    // Limit results to 10 for performance
     matches.slice(0, 10).forEach(city => {
       const div = document.createElement('div');
       div.className = 'p-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-700 last:border-0';
@@ -89,45 +93,71 @@ function handleSearch(e) {
   }
 }
 
+async function getCoordinates(cityName) {
+  try {
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.results && data.results.length > 0) {
+      return {
+        lat: data.results[0].latitude,
+        lon: data.results[0].longitude
+      };
+    }
+  } catch (err) {
+    console.error("Failed to get coordinates:", err);
+  }
+
+  return null;
+}
+
+async function fetchWeather(lat, lon) {
+  try {
+    const url = `${API_WEATHER}?latitude=${lat}&longitude=${lon}&current_weather=true`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.current_weather) {
+      return {
+        temperature: data.current_weather.temperature,
+        wind: data.current_weather.windspeed,
+        weather_code: data.current_weather.weathercode
+      };
+    }
+  } catch (err) {
+    console.error("Weather fetch failed:", err);
+  }
+
+  return null;
+}
+
 async function addClock(city) {
-  if (activeClocks.find(c => c.timezone === city.timezone)) return; // Prevent duplicates
+  if (activeClocks.find(c => c.timezone === city.timezone)) return;
 
   try {
-    const [tzResult, imageResult] = await Promise.allSettled([
-      fetch(`${BASE_URL}/timezone/${city.timezone}`),
-      fetchCityImage(city.name, city.country)
-    ]);
+    const coords = await getCoordinates(city.name);
+    let weather = null;
 
-    let utc_offset = city.utc_offset;
-    let abbreviation = city.abbreviation;
-    let image = city.image;
-
-    if (tzResult.status === 'fulfilled') {
-      try {
-        const tzData = await tzResult.value.json();
-        utc_offset = tzData.utc_offset;
-        abbreviation = tzData.abbreviation;
-      } catch (e) {
-        console.error('Failed to parse timezone response for', city.timezone);
-      }
+    if (coords) {
+      weather = await fetchWeather(coords.lat, coords.lon);
     }
 
-    if (imageResult.status === 'fulfilled' && imageResult.value) {
-      image = imageResult.value;
-    }
+    const tzRes = await fetch(`${BASE_URL}/timezone/${city.timezone}`);
+    const tzData = await tzRes.json();
 
     const cityWithDetails = {
       ...city,
-      utc_offset,
-      abbreviation,
-      image
+      utc_offset: tzData.utc_offset,
+      abbreviation: tzData.abbreviation,
+      weather: weather
     };
+    cityWithDetails.image = await fetchCityImage(city.name, city.country);
 
     activeClocks.push(cityWithDetails);
     renderClocks();
   } catch (error) {
-    console.error("Error fetching city details:", error);
-    // Fallback if API fails for specific city
+    console.error("Error loading city data:", error);
     activeClocks.push(city);
     renderClocks();
   }
@@ -141,7 +171,8 @@ async function fetchCityImage(cityName, region) {
   if (PEXELS_API_KEY && PEXELS_API_KEY.length > 0) {
     try {
       for (let q of queries) {
-        const page = Math.floor(Math.random() * 50) + 1;
+        const page = Math.floor(Math.random() * 10) + 1;
+
         const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=1&orientation=landscape&page=${page}`;
         const res = await fetch(url, { headers: { Authorization: PEXELS_API_KEY } });
         if (res.ok) {
@@ -169,14 +200,34 @@ async function fetchCityImage(cityName, region) {
   return `https://source.unsplash.com/720x400/?${encodeURIComponent(unsplashQuery)}`;
 }
 
-function removeClock(cityName) {
-  activeClocks = activeClocks.filter(c => c.name !== cityName);
-  renderClocks();
+function getWeatherDescription(code) {
+  const map = {
+    0: "Clear",
+    1: "Mainly Clear",
+    2: "Partly Cloudy",
+    3: "Overcast",
+    45: "Fog",
+    48: "Heavy Fog",
+    51: "Light Drizzle",
+    61: "Rain",
+    71: "Snow",
+    95: "Thunderstorm"
+  };
+  return map[code] || "Weather";
 }
 
 function renderClocks() {
   clocksContainer.innerHTML = '';
   activeClocks.forEach(city => {
+    const weather = city.weather
+      ? `
+        <p class="text-gray-300 text-sm mt-2">
+          🌡️ ${city.weather.temperature}°C  
+          • ${getWeatherDescription(city.weather.weather_code)}  
+          • 💨 ${city.weather.wind} km/h
+        </p>`
+      : `<p class="text-gray-300 text-sm mt-2">Weather unavailable</p>`;
+
     const card = document.createElement('div');
     card.className = 'p-4 clock-card';
     card.innerHTML = `
@@ -185,10 +236,15 @@ function renderClocks() {
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         <img class="lg:h-48 md:h-36 w-full object-cover object-center mb-6 rounded" src="${city.image}" alt="${city.name}">
-        <h2 class="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">${city.country.toUpperCase()} ${city.utc_offset ? `(${city.utc_offset})` : ''}</h2>
+        
+        <h2 class="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">${city.country.toUpperCase()} (${city.utc_offset})</h2>
         <h1 class="title-font sm:text-2xl text-xl font-medium text-white mb-3">${city.name}</h1>
+        
         <p class="leading-relaxed mb-3 text-4xl font-bold text-indigo-400 time-display" data-timezone="${city.timezone}">--:--:--</p>
         <p class="text-gray-500 text-sm mb-4 date-display" data-timezone="${city.timezone}">--</p>
+
+        ${weather}
+
         <div class="text-center mt-4">
           <button onclick="openComparison('${city.name}')" class="inline-flex text-white bg-indigo-500 border-0 py-1 px-4 focus:outline-none hover:bg-indigo-600 rounded text-sm">Compare</button>
         </div>
@@ -199,6 +255,21 @@ function renderClocks() {
   updateTimes();
 }
 
+async function updateWeatherForAll() {
+  for (let city of activeClocks) {
+    const coords = await getCoordinates(city.name);
+    if (coords) {
+      city.weather = await fetchWeather(coords.lat, coords.lon);
+    }
+  }
+  renderClocks();
+}
+
+function removeClock(cityName) {
+  activeClocks = activeClocks.filter(c => c.name !== cityName);
+  renderClocks();
+}
+
 function updateTimes() {
   const timeDisplays = document.querySelectorAll('.time-display');
   const dateDisplays = document.querySelectorAll('.date-display');
@@ -206,27 +277,25 @@ function updateTimes() {
   timeDisplays.forEach(display => {
     const timezone = display.getAttribute('data-timezone');
     const now = new Date();
-    const timeString = new Intl.DateTimeFormat('en-US', {
+    display.textContent = new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
       timeZone: timezone,
       hour12: true
     }).format(now);
-    display.textContent = timeString;
   });
 
   dateDisplays.forEach(display => {
     const timezone = display.getAttribute('data-timezone');
     const now = new Date();
-    const dateString = new Intl.DateTimeFormat('en-US', {
+    display.textContent = new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       timeZone: timezone
     }).format(now);
-    display.textContent = dateString;
   });
 }
 
@@ -262,36 +331,34 @@ function handleComparisonSelect(e) {
   }
 
   const targetCity = activeClocks.find(c => c.name === targetCityName);
-  
+
   const now = new Date();
-  const sourceDateStr = new Date().toLocaleString("en-US", { timeZone: currentComparisonSource.timezone });
-  const targetDateStr = new Date().toLocaleString("en-US", { timeZone: targetCity.timezone });
-  
+  const sourceDateStr = now.toLocaleString("en-US", { timeZone: currentComparisonSource.timezone });
+  const targetDateStr = now.toLocaleString("en-US", { timeZone: targetCity.timezone });
+
   const sourceDate = new Date(sourceDateStr);
   const targetDate = new Date(targetDateStr);
-  
+
   const diffMs = targetDate - sourceDate;
   const diffHours = Math.floor(Math.abs(diffMs) / 3600000);
   const diffMinutes = Math.floor((Math.abs(diffMs) % 3600000) / 60000);
-  
+
   const isAhead = diffMs >= 0;
-  
+
   document.getElementById('target-city').textContent = targetCity.name;
   document.getElementById('time-diff').textContent = `${diffHours}h ${diffMinutes > 0 ? diffMinutes + 'm' : ''}`;
   document.getElementById('ahead-behind').textContent = isAhead ? 'ahead' : 'behind';
-  
-  // Show target time
+
   const targetTimeStr = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: targetCity.timezone,
     hour12: true
   }).format(now);
-  
+
   document.getElementById('target-time-display').textContent = `Current time in ${targetCity.name}: ${targetTimeStr}`;
 
   comparisonResult.classList.remove('hidden');
 }
 
-// Start the app
 init();

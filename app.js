@@ -382,3 +382,17 @@ function handleComparisonSelect(e) {
 }
 
 init();
+const btn = document.getElementById("theme-toggle");
+let isDark = true;
+
+btn.addEventListener("click", () => {
+  document.body.classList.toggle("dark");
+
+  if (isDark) {
+    btn.textContent = "☀️";  // switch to light icon
+  } else {
+    btn.textContent = "🌙";  // switch to dark icon
+  }
+
+  isDark = !isDark;
+});

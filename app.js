@@ -93,8 +93,9 @@ function handleSearch(e) {
   }
 }
 
-async function getCoordinates(cityName) {
+async function getCoordinates(cityName, timezone) {
   try {
+    // Try city-based search first
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`;
     const res = await fetch(url);
     const data = await res.json();
@@ -105,12 +106,23 @@ async function getCoordinates(cityName) {
         lon: data.results[0].longitude
       };
     }
-  } catch (err) {
-    console.error("Failed to get coordinates:", err);
-  }
 
+    // Fallback: use TIMEZONE LOCATION
+    const tzRes = await fetch(`${BASE_URL}/timezone/${timezone}`);
+    const tzData = await tzRes.json();
+
+    if (tzData.latitude && tzData.longitude) {
+      return {
+        lat: tzData.latitude,
+        lon: tzData.longitude
+      };
+    }
+  } catch (e) {
+    console.error("Coordinate fetch failed:", e);
+  }
   return null;
 }
+
 
 async function fetchWeather(lat, lon) {
   try {
@@ -238,7 +250,7 @@ function renderClocks() {
         <img class="lg:h-48 md:h-36 w-full object-cover object-center mb-6 rounded" 
           src="${city.image}" 
           alt="${city.name}" 
-          onerror="this.src='https://dummyimage.com/720x400/4a5568/fff&text=${encodeURIComponent(city.name)}'">
+          onerror="this.src='https://source.unsplash.com/720x400/?nature'">
         <h2 class="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">
            ${city.country.toUpperCase()} (${city.utc_offset})
         </h2>

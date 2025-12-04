@@ -389,9 +389,9 @@ btn.addEventListener("click", () => {
   document.body.classList.toggle("dark");
 
   if (isDark) {
-    btn.textContent = "☀️";  // switch to light icon
+    btn.textContent = "☀️";  
   } else {
-    btn.textContent = "🌙";  // switch to dark icon
+    btn.textContent = "🌙";  
   }
 
   isDark = !isDark;

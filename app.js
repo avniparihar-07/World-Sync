@@ -5,6 +5,8 @@ const API_WEATHER = "https://api.open-meteo.com/v1/forecast";
 let allTimezones = [];
 let activeClocks = [];
 let currentComparisonSource = null;
+let selectedCity = null;
+
 
 const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
@@ -26,6 +28,20 @@ async function init() {
   }
 
   searchInput.addEventListener('input', handleSearch);
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      // Only add the city the user selected
+      if (selectedCity) {
+        addClock(selectedCity);
+        selectedCity = null;
+        searchInput.value = "";
+        searchResults.classList.add("hidden");
+      }
+    }
+  });
+
   closeModalBtn.addEventListener('click', closeComparison);
   comparisonModal.addEventListener('click', (e) => {
     if (e.target === comparisonModal) closeComparison();
@@ -82,10 +98,11 @@ function handleSearch(e) {
       div.className = 'p-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-700 last:border-0';
       div.textContent = `${city.name}, ${city.country}`;
       div.onclick = () => {
-        addClock(city);
-        searchInput.value = '';
+        selectedCity = city;  // store selected city
+        searchInput.value = `${city.name}, ${city.country}`;
         searchResults.classList.add('hidden');
       };
+
       searchResults.appendChild(div);
     });
   } else {

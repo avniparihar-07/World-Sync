@@ -83,10 +83,10 @@ body.dark h3,
 body.dark p {
   color: white !important;
 }
-header{
+header {
   display: flex;
   justify-content: space-between;
-  align-items: center;  
+  align-items: center;
 }
 #toggle-btn {
   width: 40px;
@@ -95,4 +95,11 @@ header{
   border: none;
   cursor: pointer;
   font-size: 1.5rem;
+}
+
+#close-modal {
+  cursor: pointer;
+  right: 18px;
+  top: 25px;
+  font-size: 30px;
 }
